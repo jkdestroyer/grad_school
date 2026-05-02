@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Graduate School Application Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fafaf7;
+    --surface: #ffffff;
+    --surface-2: #f4f3ee;
+    --border: #e5e3dc;
+    --border-strong: #1a1a1a;
+    --text: #1a1a1a;
+    --text-soft: #555;
+    --text-muted: #888;
+    --accent: #2d5f3f;
+    --accent-soft: #e8f0ea;
+    --warn: #c84630;
+    --warn-soft: #fce8e3;
+    --info: #2c5282;
+    --info-soft: #e3ebf5;
+    --gold: #b08d3e;
+    --gold-soft: #f5edd8;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans KR', 'Inter', -apple-system, sans-serif;
+    line-height: 1.5;
+    font-size: 14px;
+    padding: 32px 24px;
+  }
+
+  .container {
+    max-width: 1600px;
+    margin: 0 auto;
+  }
+
+  /* Header */
+  .header {
+    margin-bottom: 40px;
+    padding-bottom: 32px;
+    border-bottom: 2px solid var(--border-strong);
+  }
+
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 16px;
+  }
+
+  .title {
+    font-family: 'Inter', sans-serif;
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--text);
+  }
+
+  .title .highlight {
+    color: var(--accent);
+  }
+
+  .meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .subtitle {
+    font-size: 15px;
+    color: var(--text-soft);
+    max-width: 700px;
+  }
+
+  /* Stats bar */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 16px 18px;
+    border-radius: 8px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 500;
+    margin-bottom: 6px;
+  }
+
+  .stat-value {
+    font-family: 'Inter', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+
+  .stat-card.accent .stat-value { color: var(--accent); }
+  .stat-card.warn .stat-value { color: var(--warn); }
+  .stat-card.gold .stat-value { color: var(--gold); }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 24px;
+    align-items: center;
+    font-size: 12px;
+  }
+
+  .legend-label {
+    color: var(--text-muted);
+    margin-right: 8px;
+    font-weight: 500;
+  }
+
+  /* Section title */
+  .section-title {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text);
+    margin: 32px 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* Tags / Pills */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 9px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.02em;
+    line-height: 1.4;
+    white-space: nowrap;
+  }
+
+  .pill.green { background: var(--accent-soft); color: var(--accent); }
+  .pill.red { background: var(--warn-soft); color: var(--warn); }
+  .pill.blue { background: var(--info-soft); color: var(--info); }
+  .pill.gold { background: var(--gold-soft); color: var(--gold); }
+  .pill.gray { background: var(--surface-2); color: var(--text-soft); }
+  .pill.dark { background: var(--text); color: var(--bg); }
+
+  /* Status indicator dot */
+  .dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+  }
+
+  .dot.interest { background: #888; }
+  .dot.contact { background: #b08d3e; }
+  .dot.applying { background: #2c5282; }
+  .dot.submitted { background: #2d5f3f; }
+  .dot.waiting { background: #6f42c1; }
+  .dot.accepted { background: #2d5f3f; }
+  .dot.rejected { background: #c84630; }
+
+  /* Cards / school grid */
+  .school-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .school-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+
+  .school-card:hover {
+    border-color: var(--text-soft);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+  }
+
+  .school-card.template {
+    border-style: dashed;
+    border-color: var(--border);
+    background: repeating-linear-gradient(
+      45deg,
+      var(--surface),
+      var(--surface) 10px,
+      var(--surface-2) 10px,
+      var(--surface-2) 20px
+    );
+  }
+
+  /* Card top bar */
+  .card-top {
+    padding: 18px 24px 14px;
+    border-bottom: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 20px;
+    align-items: center;
+  }
+
+  .school-name-block .name {
+    font-family: 'Inter', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .school-name-block .location {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .rankings {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .rank-block {
+    text-align: center;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface-2);
+    min-width: 64px;
+  }
+
+  .rank-block .rank-label {
+    font-size: 9px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 600;
+  }
+
+  .rank-block .rank-value {
+    font-family: 'Inter', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1;
+    margin-top: 2px;
+  }
+
+  .rank-block.field {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+  }
+
+  .rank-block.field .rank-value { color: var(--accent); }
+
+  .status-block {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+  }
+
+  .status-current {
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .fit-score {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-soft);
+  }
+
+  .fit-stars {
+    color: var(--gold);
+    letter-spacing: 1px;
+  }
+
+  /* Card body grid */
+  .card-body {
+    padding: 20px 24px;
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr;
+    gap: 24px;
+  }
+
+  @media (max-width: 1100px) {
+    .card-body { grid-template-columns: 1fr 1fr; }
+  }
+
+  @media (max-width: 700px) {
+    .card-body { grid-template-columns: 1fr; }
+  }
+
+  .info-block h4 {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 700;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .info-row .label {
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .info-row .value {
+    color: var(--text);
+    font-weight: 600;
+    text-align: right;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+  }
+
+  /* Professor list */
+  .prof-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .prof-item {
+    background: var(--surface-2);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 13px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .prof-name {
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .prof-area {
+    font-size: 11px;
+    color: var(--text-soft);
+    margin-top: 2px;
+  }
+
+  .prof-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    border: 1px solid var(--accent);
+    padding: 3px 8px;
+    border-radius: 4px;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+  }
+
+  .prof-link:hover {
+    background: var(--accent);
+    color: white;
+  }
+
+  /* Notes section */
+  .notes-section {
+    padding: 14px 24px 18px;
+    background: var(--surface-2);
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-soft);
+  }
+
+  .notes-section .notes-label {
+    font-weight: 700;
+    color: var(--text);
+    margin-right: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  /* Action footer */
+  .actions {
+    padding: 12px 24px;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    font-size: 11px;
+  }
+
+  .action-label {
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-right: 4px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Instructions card */
+  .instructions {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    padding: 24px 28px;
+    border-radius: 8px;
+    margin-bottom: 32px;
+  }
+
+  .instructions h3 {
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: var(--text);
+  }
+
+  .instructions p {
+    color: var(--text-soft);
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+
+  .instructions code {
+    background: var(--surface-2);
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text);
+  }
+
+  .instructions ul {
+    margin: 8px 0 0 18px;
+    color: var(--text-soft);
+    font-size: 13px;
+  }
+
+  .instructions ul li {
+    margin-bottom: 4px;
+  }
+
+  /* Print */
+  @media print {
+    body { padding: 0; background: white; }
+    .school-card { break-inside: avoid; page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- Header -->
+<header class="header">
+  <div class="header-top">
+    <div>
+      <h1 class="title">Graduate School <span class="highlight">Application Tracker</span></h1>
+      <p class="subtitle">PhD &amp; MS Applications · Hardware Accelerators / Computational Imaging / Photonic Computing</p>
+    </div>
+    <div class="meta">Last updated · YYYY.MM.DD</div>
+  </div>
+</header>
+
+<!-- Stats Overview -->
+<div class="stats">
+  <div class="stat-card">
+    <div class="stat-label">Total Schools</div>
+    <div class="stat-value">8</div>
+  </div>
+  <div class="stat-card accent">
+    <div class="stat-label">Submitted</div>
+    <div class="stat-value">0</div>
+  </div>
+  <div class="stat-card gold">
+    <div class="stat-label">In Progress</div>
+    <div class="stat-value">0</div>
+  </div>
+  <div class="stat-card warn">
+    <div class="stat-label">Next Deadline</div>
+    <div class="stat-value" style="font-size: 16px;">— days</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Recommenders</div>
+    <div class="stat-value">3</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Total Fees</div>
+    <div class="stat-value" style="font-size: 18px;">$0</div>
+  </div>
+</div>
+
+<!-- Legend -->
+<div class="legend">
+  <span class="legend-label">상태</span>
+  <span class="pill gray"><span class="dot interest"></span>관심</span>
+  <span class="pill gold"><span class="dot contact"></span>컨택 중</span>
+  <span class="pill blue"><span class="dot applying"></span>지원 작성 중</span>
+  <span class="pill green"><span class="dot submitted"></span>제출 완료</span>
+  <span class="pill" style="background: #ede4f5; color: #6f42c1;"><span class="dot waiting"></span>결과 대기</span>
+  <span class="pill green"><span class="dot accepted"></span>합격</span>
+  <span class="pill red"><span class="dot rejected"></span>불합격</span>
+</div>
+
+<!-- Instructions -->
+<div class="instructions">
+  <h3>📋 사용 안내</h3>
+  <p>이 페이지는 <strong>템플릿</strong>입니다. 아래 카드 형식을 그대로 복사해서 학교마다 채워나가세요. 노션으로 옮기는 방법:</p>
+  <ul>
+    <li><strong>방법 1 (추천)</strong>: 노션에서 새 페이지 만들고 <code>/database</code> → "Table" 선택. 같이 제공된 <code>grad_tracker.csv</code>를 import (노션 페이지에서 <code>···</code> → Import → CSV)</li>
+    <li><strong>방법 2</strong>: 제공된 <code>grad_tracker.md</code>를 노션에 통째로 붙여넣기 (노션이 마크다운을 자동 변환함)</li>
+    <li><strong>방법 3</strong>: 이 HTML 파일을 그대로 브라우저로 열어서 사용 (노션 없이도 작동)</li>
+  </ul>
+  <p style="margin-top: 12px;"><strong>아래 첫 번째 카드(Stanford)는 작성 예시</strong>이고, 나머지는 빈 템플릿입니다. 본인 정보로 교체하세요.</p>
+</div>
+
+<!-- ==================== EXAMPLE CARD (Stanford) ==================== -->
+<div class="section-title">📚 작성 예시</div>
+
+<div class="school-grid">
+
+<div class="school-card">
+  <div class="card-top">
+    <div class="school-name-block">
+      <div class="name">Stanford University</div>
+      <div class="location">Stanford, CA · EE / CS Department</div>
+    </div>
+    <div class="rankings">
+      <div class="rank-block">
+        <div class="rank-label">US News</div>
+        <div class="rank-value">#3</div>
+      </div>
+      <div class="rank-block field">
+        <div class="rank-label">EE / CS</div>
+        <div class="rank-value">#1</div>
+      </div>
+    </div>
+    <div class="status-block">
+      <div class="status-current"><span class="dot interest"></span>관심 단계</div>
+      <div class="fit-score">Fit <span class="fit-stars">★★★★★</span></div>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <!-- LEFT: Professors -->
+    <div class="info-block">
+      <h4>관심 교수님</h4>
+      <div class="prof-list">
+        <div class="prof-item">
+          <div>
+            <div class="prof-name">Gordon Wetzstein</div>
+            <div class="prof-area">Computational Imaging / Holographic Display</div>
+          </div>
+          <a href="https://stanford.edu/~gordonwz/" class="prof-link" target="_blank">홈 ↗</a>
+        </div>
+        <div class="prof-item">
+          <div>
+            <div class="prof-name">Jelena Vučković</div>
+            <div class="prof-area">Nanophotonics / Photonic Inverse Design</div>
+          </div>
+          <a href="https://nqp.stanford.edu/" class="prof-link" target="_blank">홈 ↗</a>
+        </div>
+        <div class="prof-item">
+          <div>
+            <div class="prof-name">Mark Horowitz</div>
+            <div class="prof-area">Computer Architecture / Accelerator</div>
+          </div>
+          <a href="https://web.stanford.edu/~horowitz/" class="prof-link" target="_blank">홈 ↗</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- MIDDLE: Deadlines & Logistics -->
+    <div class="info-block">
+      <h4>지원 정보</h4>
+      <div class="info-row">
+        <span class="label">컨택 필요</span>
+        <span class="value">선택 (권장)</span>
+      </div>
+      <div class="info-row">
+        <span class="label">PhD 마감</span>
+        <span class="value">12월 첫째 주</span>
+      </div>
+      <div class="info-row">
+        <span class="label">MS 마감</span>
+        <span class="value">12월 첫째 주</span>
+      </div>
+      <div class="info-row">
+        <span class="label">MS Thesis</span>
+        <span class="value">선택 가능</span>
+      </div>
+      <div class="info-row">
+        <span class="label">결과 발표</span>
+        <span class="value">3월 중</span>
+      </div>
+      <div class="info-row">
+        <span class="label">지원료</span>
+        <span class="value">$125</span>
+      </div>
+      <div class="info-row">
+        <span class="label">인터뷰</span>
+        <span class="value">교수별 다름</span>
+      </div>
+    </div>
+
+    <!-- RIGHT: Requirements -->
+    <div class="info-block">
+      <h4>요구 사항</h4>
+      <div class="info-row">
+        <span class="label">GRE</span>
+        <span class="value">미요구</span>
+      </div>
+      <div class="info-row">
+        <span class="label">TOEFL</span>
+        <span class="value">100+ 권장</span>
+      </div>
+      <div class="info-row">
+        <span class="label">GPA 컷</span>
+        <span class="value">3.7+ (사실상)</span>
+      </div>
+      <div class="info-row">
+        <span class="label">추천서</span>
+        <span class="value">3통</span>
+      </div>
+      <div class="info-row">
+        <span class="label">SOP</span>
+        <span class="value">2 페이지</span>
+      </div>
+      <div class="info-row">
+        <span class="label">Funding</span>
+        <span class="value">PhD 전원</span>
+      </div>
+      <div class="info-row">
+        <span class="label">강조 프로젝트</span>
+        <span class="value">CGH-CUDA</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes-section">
+    <span class="notes-label">📝 메모</span>
+    Wetzstein 그룹 매년 PhD 1-2명만 선발. 컨택 시 Neural Holography 시리즈 읽고 구체적 질문 준비. 학부 4학년 가을학기에 컨택 시작 권장. CGH-CUDA 프로젝트가 직접적인 fit이 됨.
+  </div>
+
+  <div class="actions">
+    <span class="action-label">컨택 이력</span>
+    <span class="pill gray">미시도</span>
+    <span class="action-label" style="margin-left: 16px;">SOP</span>
+    <span class="pill gray">미작성</span>
+    <span class="action-label" style="margin-left: 16px;">추천서</span>
+    <span class="pill gray">0/3</span>
+  </div>
+</div>
+
+</div>
+
+<!-- ==================== BLANK TEMPLATE CARDS ==================== -->
+<div class="section-title">📝 학교 카드 템플릿 (복사해서 사용)</div>
+
+<div class="school-grid">
+
+<!-- BLANK CARD 1 -->
+<div class="school-card template">
+  <div class="card-top">
+    <div class="school-name-block">
+      <div class="name">[학교명]</div>
+      <div class="location">[도시, 주] · [학과]</div>
+    </div>
+    <div class="rankings">
+      <div class="rank-block">
+        <div class="rank-label">US News</div>
+        <div class="rank-value">#—</div>
+      </div>
+      <div class="rank-block field">
+        <div class="rank-label">분야</div>
+        <div class="rank-value">#—</div>
+      </div>
+    </div>
+    <div class="status-block">
+      <div class="status-current"><span class="dot interest"></span>관심 단계</div>
+      <div class="fit-score">Fit <span class="fit-stars">★★★☆☆</span></div>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <div class="info-block">
+      <h4>관심 교수님</h4>
+      <div class="prof-list">
+        <div class="prof-item">
+          <div>
+            <div class="prof-name">[교수님 이름]</div>
+            <div class="prof-area">[연구 분야]</div>
+          </div>
+          <a href="#" class="prof-link" target="_blank">홈 ↗</a>
+        </div>
+        <div class="prof-item">
+          <div>
+            <div class="prof-name">[교수님 이름]</div>
+            <div class="prof-area">[연구 분야]</div>
+          </div>
+          <a href="#" class="prof-link" target="_blank">홈 ↗</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-block">
+      <h4>지원 정보</h4>
+      <div class="info-row"><span class="label">컨택 필요</span><span class="value">—</span></div>
+      <div class="info-row"><span class="label">PhD 마감</span><span class="value">—</span></div>
+      <div class="info-row"><span class="label">MS 마감</span><span class="value">—</span></div>
+      <div class="info-row"><span class="label">MS Thesis</span><span class="value">—</span></div>
+      <div class="info-row"><span class="label">결과 발표</span><span class="value">—</span></div>
+      <div class="info-row"><span class="label">지원료</span><span class="value">$—</span></div>
+      <div class="info-row"><span class="label">인터뷰</span><span class="value">—</span></div>
+    </div>
+
+    <div class="info-block">
+      <h4>요구 사항</h4>
+      <div class="info-row"><span class="label">GRE</span><span class="value">—</span></div>
+      <div class="info-row"><span class="label">TOEFL</span><span class="value">—</span></div>
+      <div class="info-row"><span class="label">GPA 컷</span><span class="value">—</span></div>
+      <div class="info-row"><span class="label">추천서</span><span class="value">— 통</span></div>
+      <div class="info-row"><span class="label">SOP</span><span class="value">— 페이지</span></div>
+      <div class="info-row"><span class="label">Funding</span><span class="value">—</span></div>
+      <div class="info-row"><span class="label">강조 프로젝트</span><span class="value">—</span></div>
+    </div>
+  </div>
+
+  <div class="notes-section">
+    <span class="notes-label">📝 메모</span>
+    [특이사항, 컨택 팁, 면접 정보, 학생 모집 상태 등을 여기에 적으세요]
+  </div>
+
+  <div class="actions">
+    <span class="action-label">컨택 이력</span>
+    <span class="pill gray">미시도</span>
+    <span class="action-label" style="margin-left: 16px;">SOP</span>
+    <span class="pill gray">미작성</span>
+    <span class="action-label" style="margin-left: 16px;">추천서</span>
+    <span class="pill gray">0/—</span>
+  </div>
+</div>
+
+<!-- BLANK CARD 2 -->
+<div class="school-card template">
+  <div class="card-top">
+    <div class="school-name-block">
+      <div class="name">[학교명]</div>
+      <div class="location">[도시, 주] · [학과]</div>
+    </div>
+    <div class="rankings">
+      <div class="rank-block">
+        <div class="rank-label">US News</div>
+        <div class="rank-value">#—</div>
+      </div>
+      <div class="rank-block field">
+        <div class="rank-label">분야</div>
+        <div class="rank-value">#—</div>
+      </div>
+    </div>
+    <div class="status-block">
+      <div class="status-current"><span class="dot interest"></span>관심 단계</div>
+      <div class="fit-score">Fit <span class="fit-stars">★★★☆☆</span></div>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <div class="info-block">
+      <h4>관심 교수님</h4>
+      <div class="prof-list">
+        <div class="prof-item">
+          <div>
+            <div class="prof-name">[교수님 이름]</div>
+            <div class="prof-area">[연구 분야]</div>
+          </div>
+          <a href="#" class="prof-link" target="_blank">홈 ↗</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-block">
+      <h4>지원 정보</h4>
+      <div class="info-row"><span class="label">컨택 필요</span><span class="value">—</span></div>
+      <div class="info-row"><span class="label">PhD 마감</span><span class="value">—</span></div>
+      <div class="info-row"><span class="label">MS 마감</span><span class="value">—</span></div>
+      <div class="info-row"><span class="label">MS Thesis</span><span class="value">—</span></div>
+      <div class="info-row"><span class="label">결과 발표</span><span class="value">—</span></div>
+      <div class="info-row"><span class="label">지원료</span><span class="value">$—</span></div>
+      <div class="info-row"><span class="label">인터뷰</span><span class="value">—</span></div>
+    </div>
+
+    <div class="info-block">
+      <h4>요구 사항</h4>
+      <div class="info-row"><span class="label">GRE</span><span class="value">—</span></div>
+      <div class="info-row"><span class="label">TOEFL</span><span class="value">—</span></div>
+      <div class="info-row"><span class="label">GPA 컷</span><span class="value">—</span></div>
+      <div class="info-row"><span class="label">추천서</span><span class="value">— 통</span></div>
+      <div class="info-row"><span class="label">SOP</span><span class="value">— 페이지</span></div>
+      <div class="info-row"><span class="label">Funding</span><span class="value">—</span></div>
+      <div class="info-row"><span class="label">강조 프로젝트</span><span class="value">—</span></div>
+    </div>
+  </div>
+
+  <div class="notes-section">
+    <span class="notes-label">📝 메모</span>
+    [메모를 여기에 적으세요]
+  </div>
+
+  <div class="actions">
+    <span class="action-label">컨택 이력</span>
+    <span class="pill gray">미시도</span>
+    <span class="action-label" style="margin-left: 16px;">SOP</span>
+    <span class="pill gray">미작성</span>
+    <span class="action-label" style="margin-left: 16px;">추천서</span>
+    <span class="pill gray">0/—</span>
+  </div>
+</div>
+
+<!-- BLANK CARD 3 -->
+<div class="school-card template">
+  <div class="card-top">
+    <div class="school-name-block">
+      <div class="name">[학교명]</div>
+      <div class="location">[도시, 주] · [학과]</div>
+    </div>
+    <div class="rankings">
+      <div class="rank-block">
+        <div class="rank-label">US News</div>
+        <div class="rank-value">#—</div>
+      </div>
+      <div class="rank-block field">
+        <div class="rank-label">분야</div>
+        <div class="rank-value">#—</div>
+      </div>
+    </div>
+    <div class="status-block">
+      <div class="status-current"><span class="dot interest"></span>관심 단계</div>
+      <div class="fit-score">Fit <span class="fit-stars">★★★☆☆</span></div>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <div class="info-block">
+      <h4>관심 교수님</h4>
+      <div class="prof-list">
+        <div class="prof-item">
+          <div>
+            <div class="prof-name">[교수님 이름]</div>
+            <div class="prof-area">[연구 분야]</div>
+          </div>
+          <a href="#" class="prof-link" target="_blank">홈 ↗</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-block">
+      <h4>지원 정보</h4>
+      <div class="info-row"><span class="label">컨택 필요</span><span class="value">—</span></div>
+      <div class="info-row"><span class="label">PhD 마감</span><span class="value">—</span></div>
+      <div class="info-row"><span class="label">MS 마감</span><span class="value">—</span></div>
+      <div class="info-row"><span class="label">MS Thesis</span><span class="value">—</span></div>
+      <div class="info-row"><span class="label">결과 발표</span><span class="value">—</span></div>
+      <div class="info-row"><span class="label">지원료</span><span class="value">$—</span></div>
+      <div class="info-row"><span class="label">인터뷰</span><span class="value">—</span></div>
+    </div>
+
+    <div class="info-block">
+      <h4>요구 사항</h4>
+      <div class="info-row"><span class="label">GRE</span><span class="value">—</span></div>
+      <div class="info-row"><span class="label">TOEFL</span><span class="value">—</span></div>
+      <div class="info-row"><span class="label">GPA 컷</span><span class="value">—</span></div>
+      <div class="info-row"><span class="label">추천서</span><span class="value">— 통</span></div>
+      <div class="info-row"><span class="label">SOP</span><span class="value">— 페이지</span></div>
+      <div class="info-row"><span class="label">Funding</span><span class="value">—</span></div>
+      <div class="info-row"><span class="label">강조 프로젝트</span><span class="value">—</span></div>
+    </div>
+  </div>
+
+  <div class="notes-section">
+    <span class="notes-label">📝 메모</span>
+    [메모를 여기에 적으세요]
+  </div>
+
+  <div class="actions">
+    <span class="action-label">컨택 이력</span>
+    <span class="pill gray">미시도</span>
+    <span class="action-label" style="margin-left: 16px;">SOP</span>
+    <span class="pill gray">미작성</span>
+    <span class="action-label" style="margin-left: 16px;">추천서</span>
+    <span class="pill gray">0/—</span>
+  </div>
+</div>
+
+</div>
+
+</div>
+</body>
+</html>
