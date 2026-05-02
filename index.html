@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Graduate School Application Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fafaf7;
+    --surface: #ffffff;
+    --surface-2: #f4f3ee;
+    --border: #e5e3dc;
+    --border-strong: #1a1a1a;
+    --text: #1a1a1a;
+    --text-soft: #555;
+    --text-muted: #888;
+    --accent: #2d5f3f;
+    --accent-soft: #e8f0ea;
+    --warn: #c84630;
+    --warn-soft: #fce8e3;
+    --info: #2c5282;
+    --info-soft: #e3ebf5;
+    --gold: #b08d3e;
+    --gold-soft: #f5edd8;
+    --purple: #6f42c1;
+    --purple-soft: #ede4f5;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans KR', 'Inter', -apple-system, sans-serif;
+    line-height: 1.5;
+    font-size: 14px;
+    padding: 32px 24px;
+    min-height: 100vh;
+  }
+
+  .container { max-width: 1600px; margin: 0 auto; }
+
+  /* Header */
+  .header {
+    margin-bottom: 32px;
+    padding-bottom: 28px;
+    border-bottom: 2px solid var(--border-strong);
+  }
+
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .title {
+    font-family: 'Inter', sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+
+  .title .highlight { color: var(--accent); }
+
+  .subtitle {
+    font-size: 14px;
+    color: var(--text-soft);
+    max-width: 700px;
+    margin-top: 6px;
+  }
+
+  /* Toolbar buttons */
+  .toolbar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    transition: all 0.15s ease;
+    font-family: inherit;
+  }
+
+  .btn:hover { background: var(--surface-2); border-color: var(--text-soft); }
+  .btn.primary { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .btn.primary:hover { background: var(--accent); border-color: var(--accent); }
+  .btn.accent { background: var(--accent); color: white; border-color: var(--accent); }
+  .btn.accent:hover { background: #244d33; }
+  .btn.danger { color: var(--warn); border-color: var(--warn); }
+  .btn.danger:hover { background: var(--warn-soft); }
+  .btn.small { padding: 4px 10px; font-size: 11px; }
+  .btn.icon-only { padding: 6px 10px; }
+
+  /* Stats */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 14px 16px;
+    border-radius: 8px;
+  }
+
+  .stat-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .stat-card.accent .stat-value { color: var(--accent); }
+  .stat-card.warn .stat-value { color: var(--warn); }
+  .stat-card.gold .stat-value { color: var(--gold); }
+
+  /* Filter bar */
+  .filter-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+
+  .filter-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-right: 4px;
+  }
+
+  .filter-pill {
+    padding: 5px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    transition: all 0.15s ease;
+    font-family: inherit;
+    color: var(--text-soft);
+  }
+
+  .filter-pill:hover { border-color: var(--text-soft); }
+  .filter-pill.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+  .search-input {
+    flex: 1;
+    min-width: 200px;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: inherit;
+    background: var(--surface);
+  }
+
+  .search-input:focus { outline: none; border-color: var(--accent); }
+
+  /* Sort dropdown */
+  .sort-select {
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 12px;
+    background: var(--surface);
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  /* School cards */
+  .school-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .school-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    position: relative;
+  }
+
+  .school-card:hover {
+    border-color: var(--text-soft);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+  }
+
+  .school-card[data-status="accepted"] { border-left: 4px solid var(--accent); }
+  .school-card[data-status="rejected"] { border-left: 4px solid var(--warn); opacity: 0.7; }
+  .school-card[data-status="submitted"] { border-left: 4px solid var(--info); }
+  .school-card[data-status="waiting"] { border-left: 4px solid var(--purple); }
+  .school-card[data-status="applying"] { border-left: 4px solid var(--gold); }
+
+  .card-top {
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 1fr auto auto auto;
+    gap: 16px;
+    align-items: center;
+  }
+
+  @media (max-width: 900px) {
+    .card-top { grid-template-columns: 1fr auto; }
+    .card-top > .rankings, .card-top > .status-block { grid-column: span 2; }
+  }
+
+  .school-name-block .name {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    cursor: text;
+  }
+
+  .school-name-block .location {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    margin-top: 2px;
+    cursor: text;
+  }
+
+  .rankings { display: flex; gap: 6px; }
+
+  .rank-block {
+    text-align: center;
+    padding: 5px 10px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: var(--surface-2);
+    min-width: 56px;
+  }
+
+  .rank-block.field { background: var(--accent-soft); border-color: var(--accent); }
+  .rank-block.field .rank-value { color: var(--accent); }
+
+  .rank-label {
+    font-size: 9px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+  }
+
+  .rank-value {
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 1;
+    margin-top: 2px;
+    cursor: text;
+  }
+
+  .status-block {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+  }
+
+  .status-select, .fit-select {
+    padding: 4px 8px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    background: var(--surface);
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  .card-actions {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .icon-btn {
+    background: none;
+    border: 1px solid var(--border);
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-soft);
+    font-size: 14px;
+    transition: all 0.15s ease;
+  }
+
+  .icon-btn:hover { background: var(--surface-2); color: var(--text); }
+  .icon-btn.delete:hover { background: var(--warn-soft); color: var(--warn); border-color: var(--warn); }
+
+  /* Card body */
+  .card-body {
+    padding: 16px 20px;
+    display: grid;
+    grid-template-columns: 1.3fr 1fr 1fr;
+    gap: 20px;
+  }
+
+  @media (max-width: 1100px) {
+    .card-body { grid-template-columns: 1fr 1fr; }
+  }
+
+  @media (max-width: 700px) {
+    .card-body { grid-template-columns: 1fr; }
+  }
+
+  .info-block h4 {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 700;
+    margin-bottom: 8px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .add-mini-btn {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+  }
+
+  .info-row {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    padding: 3px 0;
+    font-size: 12px;
+    line-height: 1.4;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .info-row .label {
+    color: var(--text-muted);
+    font-weight: 500;
+    font-size: 11px;
+  }
+
+  .info-row .value {
+    font-weight: 600;
+    text-align: right;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    cursor: text;
+    word-break: break-word;
+  }
+
+  /* Editable */
+  [contenteditable="true"] {
+    outline: none;
+    border-radius: 3px;
+    padding: 1px 4px;
+    margin: -1px -4px;
+    transition: background 0.15s;
+  }
+
+  [contenteditable="true"]:hover { background: var(--surface-2); }
+  [contenteditable="true"]:focus { background: var(--gold-soft); box-shadow: 0 0 0 2px var(--gold); }
+  [contenteditable="true"]:empty::before {
+    content: attr(data-placeholder);
+    color: var(--text-muted);
+    font-weight: 400;
+    font-style: italic;
+  }
+
+  /* Professor list */
+  .prof-list { display: flex; flex-direction: column; gap: 6px; }
+
+  .prof-item {
+    background: var(--surface-2);
+    border-radius: 5px;
+    padding: 8px 10px;
+    font-size: 12px;
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .prof-name { font-weight: 600; font-size: 12px; }
+  .prof-area { font-size: 10px; color: var(--text-soft); margin-top: 2px; }
+
+  .prof-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    border: 1px solid var(--accent);
+    padding: 2px 6px;
+    border-radius: 3px;
+  }
+
+  .prof-link:hover { background: var(--accent); color: white; }
+  .prof-link.empty { color: var(--text-muted); border-color: var(--border); cursor: pointer; }
+
+  .prof-delete {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px;
+  }
+
+  .prof-delete:hover { color: var(--warn); }
+
+  /* Notes */
+  .notes-section {
+    padding: 12px 20px 16px;
+    background: var(--surface-2);
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-soft);
+  }
+
+  .notes-label {
+    font-weight: 700;
+    color: var(--text);
+    margin-right: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 80px 20px;
+    background: var(--surface);
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+  }
+
+  .empty-state h3 {
+    font-size: 20px;
+    margin-bottom: 8px;
+    color: var(--text);
+  }
+
+  .empty-state p {
+    color: var(--text-soft);
+    margin-bottom: 20px;
+  }
+
+  /* Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .modal-overlay.show { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border-radius: 10px;
+    padding: 28px;
+    max-width: 500px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .modal h3 {
+    font-size: 18px;
+    margin-bottom: 16px;
+  }
+
+  .modal label {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin: 12px 0 4px;
+  }
+
+  .modal input, .modal textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 13px;
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 20px;
+    justify-content: flex-end;
+  }
+
+  /* Save indicator */
+  .save-indicator {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: var(--accent);
+    color: white;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: 50;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  }
+
+  .save-indicator.show { opacity: 1; }
+
+  /* Help banner */
+  .help-banner {
+    background: var(--info-soft);
+    border: 1px solid var(--info);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    font-size: 12px;
+    color: var(--info);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .help-banner button {
+    background: none;
+    border: none;
+    color: var(--info);
+    cursor: pointer;
+    font-size: 16px;
+  }
+
+  /* Hidden file input */
+  #file-input { display: none; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- Header -->
+<header class="header">
+  <div class="header-top">
+    <div>
+      <h1 class="title">Graduate School <span class="highlight">Application Tracker</span></h1>
+      <p class="subtitle">PhD &amp; MS Applications · Hardware Accelerators / Computational Imaging / Photonic Computing</p>
+    </div>
+    <div class="toolbar">
+      <button class="btn accent" onclick="addSchool()">＋ 학교 추가</button>
+      <button class="btn" onclick="exportData()">↓ JSON 백업</button>
+      <button class="btn" onclick="document.getElementById('file-input').click()">↑ JSON 복원</button>
+      <input type="file" id="file-input" accept=".json" onchange="importData(event)">
+      <button class="btn danger" onclick="resetAll()">전체 초기화</button>
+    </div>
+  </div>
+</header>
+
+<!-- Help banner -->
+<div class="help-banner" id="help-banner">
+  <span>💡 <strong>사용법:</strong> 모든 텍스트를 클릭해서 직접 수정하세요. 자동 저장됩니다. 정기적으로 "JSON 백업"으로 데이터를 저장해두세요.</span>
+  <button onclick="document.getElementById('help-banner').style.display='none'">✕</button>
+</div>
+
+<!-- Stats -->
+<div class="stats" id="stats"></div>
+
+<!-- Filter bar -->
+<div class="filter-bar">
+  <span class="filter-label">상태</span>
+  <button class="filter-pill active" data-filter="all">전체</button>
+  <button class="filter-pill" data-filter="interest">⚪ 관심</button>
+  <button class="filter-pill" data-filter="contact">🟡 컨택</button>
+  <button class="filter-pill" data-filter="applying">🔵 작성중</button>
+  <button class="filter-pill" data-filter="submitted">🟢 제출</button>
+  <button class="filter-pill" data-filter="waiting">🟣 대기</button>
+  <button class="filter-pill" data-filter="accepted">✅ 합격</button>
+  <button class="filter-pill" data-filter="rejected">❌ 불합격</button>
+  <input type="text" class="search-input" id="search" placeholder="🔍 학교명 / 교수님 검색...">
+  <select class="sort-select" id="sort">
+    <option value="added">추가순</option>
+    <option value="rank">학교 순위</option>
+    <option value="fit">Fit Score</option>
+    <option value="deadline">PhD 마감</option>
+    <option value="name">가나다순</option>
+  </select>
+</div>
+
+<!-- School cards container -->
+<div class="school-grid" id="school-grid"></div>
+
+</div>
+
+<!-- Save indicator -->
+<div class="save-indicator" id="save-indicator">✓ 저장됨</div>
+
+<!-- Add prof modal -->
+<div class="modal-overlay" id="prof-modal">
+  <div class="modal">
+    <h3>교수님 추가</h3>
+    <label>이름</label>
+    <input type="text" id="prof-name-input" placeholder="예: Gordon Wetzstein">
+    <label>연구 분야</label>
+    <input type="text" id="prof-area-input" placeholder="예: Computational Imaging">
+    <label>홈페이지 URL</label>
+    <input type="text" id="prof-url-input" placeholder="https://...">
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">취소</button>
+      <button class="btn primary" onclick="confirmAddProf()">추가</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ================================================
+// DATA MODEL
+// ================================================
+const STORAGE_KEY = 'grad_tracker_v1';
+const DEFAULT_DATA = {
+  schools: [
+    {
+      id: 'demo-stanford',
+      name: 'Stanford University',
+      location: 'Stanford, CA · EE / CS',
+      usRank: '3',
+      fieldRank: '1',
+      fitScore: 5,
+      status: 'interest',
+      contactRequired: '선택 (권장)',
+      phdDeadline: '12월 첫째 주',
+      msDeadline: '12월 첫째 주',
+      msThesis: '선택 가능',
+      resultDate: '3월 중',
+      appFee: '$125',
+      interview: '교수별 다름',
+      gre: '미요구',
+      toefl: '100+',
+      gpaCutoff: '3.7+',
+      recCount: '3',
+      sopPages: '2',
+      funding: 'PhD 전원',
+      highlightProject: 'CGH-CUDA',
+      profs: [
+        { name: 'Gordon Wetzstein', area: 'Computational Imaging / Holographic Display', url: 'https://stanford.edu/~gordonwz/' },
+        { name: 'Jelena Vučković', area: 'Nanophotonics / Photonic Inverse Design', url: 'https://nqp.stanford.edu/' },
+        { name: 'Mark Horowitz', area: 'Computer Architecture', url: 'https://web.stanford.edu/~horowitz/' }
+      ],
+      notes: 'Wetzstein 그룹 매년 1-2명만 선발. CGH-CUDA가 직접 fit.',
+      addedAt: Date.now()
+    }
+  ]
+};
+
+let data = loadData();
+let currentFilter = 'all';
+let currentSort = 'added';
+let searchQuery = '';
+let pendingProfSchoolId = null;
+
+function loadData() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) return JSON.parse(saved);
+  } catch (e) { console.error('Load failed', e); }
+  return JSON.parse(JSON.stringify(DEFAULT_DATA));
+}
+
+function saveData() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    showSaveIndicator();
+  } catch (e) {
+    console.error('Save failed', e);
+    alert('저장 실패. 브라우저 저장 공간이 부족하거나 권한이 없습니다.');
+  }
+}
+
+function showSaveIndicator() {
+  const el = document.getElementById('save-indicator');
+  el.classList.add('show');
+  clearTimeout(showSaveIndicator.t);
+  showSaveIndicator.t = setTimeout(() => el.classList.remove('show'), 1500);
+}
+
+// ================================================
+// STATUS / FIT CONFIG
+// ================================================
+const STATUS_OPTIONS = [
+  { value: 'interest', label: '⚪ 관심' },
+  { value: 'contact', label: '🟡 컨택 중' },
+  { value: 'applying', label: '🔵 작성 중' },
+  { value: 'submitted', label: '🟢 제출' },
+  { value: 'waiting', label: '🟣 대기' },
+  { value: 'accepted', label: '✅ 합격' },
+  { value: 'rejected', label: '❌ 불합격' }
+];
+
+const FIT_OPTIONS = [
+  { value: 1, label: '★☆☆☆☆' },
+  { value: 2, label: '★★☆☆☆' },
+  { value: 3, label: '★★★☆☆' },
+  { value: 4, label: '★★★★☆' },
+  { value: 5, label: '★★★★★' }
+];
+
+// ================================================
+// CRUD OPERATIONS
+// ================================================
+function addSchool() {
+  const newSchool = {
+    id: 'school-' + Date.now(),
+    name: '새 학교',
+    location: '도시, 주 · 학과',
+    usRank: '—',
+    fieldRank: '—',
+    fitScore: 3,
+    status: 'interest',
+    contactRequired: '—',
+    phdDeadline: '—',
+    msDeadline: '—',
+    msThesis: '—',
+    resultDate: '—',
+    appFee: '$—',
+    interview: '—',
+    gre: '—',
+    toefl: '—',
+    gpaCutoff: '—',
+    recCount: '—',
+    sopPages: '—',
+    funding: '—',
+    highlightProject: '—',
+    profs: [],
+    notes: '메모를 적으세요.',
+    addedAt: Date.now()
+  };
+  data.schools.unshift(newSchool);
+  saveData();
+  render();
+}
+
+function deleteSchool(id) {
+  if (!confirm('이 학교를 삭제하시겠습니까?')) return;
+  data.schools = data.schools.filter(s => s.id !== id);
+  saveData();
+  render();
+}
+
+function updateField(schoolId, field, value) {
+  const school = data.schools.find(s => s.id === schoolId);
+  if (!school) return;
+  school[field] = value;
+  saveData();
+  if (field === 'status' || field === 'fitScore' || field === 'usRank' || field === 'fieldRank' || field === 'phdDeadline' || field === 'name') {
+    renderStats();
+  }
+}
+
+function openProfModal(schoolId) {
+  pendingProfSchoolId = schoolId;
+  document.getElementById('prof-name-input').value = '';
+  document.getElementById('prof-area-input').value = '';
+  document.getElementById('prof-url-input').value = '';
+  document.getElementById('prof-modal').classList.add('show');
+  setTimeout(() => document.getElementById('prof-name-input').focus(), 50);
+}
+
+function closeModal() {
+  document.getElementById('prof-modal').classList.remove('show');
+  pendingProfSchoolId = null;
+}
+
+function confirmAddProf() {
+  const name = document.getElementById('prof-name-input').value.trim();
+  if (!name) { alert('이름을 입력하세요.'); return; }
+  const area = document.getElementById('prof-area-input').value.trim();
+  const url = document.getElementById('prof-url-input').value.trim();
+  const school = data.schools.find(s => s.id === pendingProfSchoolId);
+  if (!school) return;
+  school.profs.push({ name, area, url });
+  saveData();
+  render();
+  closeModal();
+}
+
+function deleteProf(schoolId, profIndex) {
+  const school = data.schools.find(s => s.id === schoolId);
+  if (!school) return;
+  school.profs.splice(profIndex, 1);
+  saveData();
+  render();
+}
+
+function updateProf(schoolId, profIndex, field, value) {
+  const school = data.schools.find(s => s.id === schoolId);
+  if (!school || !school.profs[profIndex]) return;
+  school.profs[profIndex][field] = value;
+  saveData();
+}
+
+// ================================================
+// EXPORT / IMPORT / RESET
+// ================================================
+function exportData() {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const date = new Date().toISOString().split('T')[0];
+  a.download = `grad_tracker_${date}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if (!imported.schools || !Array.isArray(imported.schools)) {
+        throw new Error('잘못된 형식');
+      }
+      if (confirm('현재 데이터를 가져온 데이터로 덮어쓰시겠습니까?')) {
+        data = imported;
+        saveData();
+        render();
+      }
+    } catch (err) {
+      alert('파일을 불러올 수 없습니다: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function resetAll() {
+  if (!confirm('모든 데이터를 삭제하고 처음 상태로 되돌리시겠습니까? 이 작업은 되돌릴 수 없습니다.')) return;
+  if (!confirm('정말로 삭제하시겠습니까?')) return;
+  data = JSON.parse(JSON.stringify(DEFAULT_DATA));
+  saveData();
+  render();
+}
+
+// ================================================
+// RENDERING
+// ================================================
+function renderStats() {
+  const total = data.schools.length;
+  const submitted = data.schools.filter(s => ['submitted', 'waiting', 'accepted', 'rejected'].includes(s.status)).length;
+  const inProgress = data.schools.filter(s => ['contact', 'applying'].includes(s.status)).length;
+  const accepted = data.schools.filter(s => s.status === 'accepted').length;
+  const totalFees = data.schools.reduce((sum, s) => {
+    const fee = parseInt((s.appFee || '').replace(/\D/g, '')) || 0;
+    return sum + fee;
+  }, 0);
+
+  document.getElementById('stats').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-label">전체 학교</div>
+      <div class="stat-value">${total}</div>
+    </div>
+    <div class="stat-card accent">
+      <div class="stat-label">제출 완료</div>
+      <div class="stat-value">${submitted}</div>
+    </div>
+    <div class="stat-card gold">
+      <div class="stat-label">진행 중</div>
+      <div class="stat-value">${inProgress}</div>
+    </div>
+    <div class="stat-card accent">
+      <div class="stat-label">합격</div>
+      <div class="stat-value">${accepted}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">총 지원료</div>
+      <div class="stat-value" style="font-size: 18px;">$${totalFees}</div>
+    </div>
+  `;
+}
+
+function getFilteredSchools() {
+  let filtered = [...data.schools];
+
+  if (currentFilter !== 'all') {
+    filtered = filtered.filter(s => s.status === currentFilter);
+  }
+
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    filtered = filtered.filter(s => {
+      if ((s.name || '').toLowerCase().includes(q)) return true;
+      if ((s.location || '').toLowerCase().includes(q)) return true;
+      if (s.profs && s.profs.some(p => (p.name || '').toLowerCase().includes(q))) return true;
+      return false;
+    });
+  }
+
+  switch (currentSort) {
+    case 'rank':
+      filtered.sort((a, b) => {
+        const aR = parseInt(a.usRank) || 999;
+        const bR = parseInt(b.usRank) || 999;
+        return aR - bR;
+      });
+      break;
+    case 'fit':
+      filtered.sort((a, b) => (b.fitScore || 0) - (a.fitScore || 0));
+      break;
+    case 'deadline':
+      filtered.sort((a, b) => (a.phdDeadline || 'zzz').localeCompare(b.phdDeadline || 'zzz'));
+      break;
+    case 'name':
+      filtered.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      break;
+    case 'added':
+    default:
+      filtered.sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
+  }
+
+  return filtered;
+}
+
+function escapeHtml(s) {
+  return (s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderSchools() {
+  const grid = document.getElementById('school-grid');
+  const schools = getFilteredSchools();
+
+  if (schools.length === 0) {
+    grid.innerHTML = `
+      <div class="empty-state">
+        <h3>${data.schools.length === 0 ? '아직 추가된 학교가 없습니다' : '검색 결과가 없습니다'}</h3>
+        <p>${data.schools.length === 0 ? '"+ 학교 추가" 버튼을 눌러 시작하세요' : '필터나 검색어를 변경해보세요'}</p>
+        ${data.schools.length === 0 ? '<button class="btn accent" onclick="addSchool()">＋ 첫 학교 추가</button>' : ''}
+      </div>
+    `;
+    return;
+  }
+
+  grid.innerHTML = schools.map(s => {
+    const statusOpts = STATUS_OPTIONS.map(o =>
+      `<option value="${o.value}" ${s.status === o.value ? 'selected' : ''}>${o.label}</option>`
+    ).join('');
+
+    const fitOpts = FIT_OPTIONS.map(o =>
+      `<option value="${o.value}" ${s.fitScore === o.value ? 'selected' : ''}>Fit ${o.label}</option>`
+    ).join('');
+
+    const profsHtml = s.profs.length === 0
+      ? '<div style="font-size: 11px; color: var(--text-muted); font-style: italic; padding: 8px;">+ 버튼을 눌러 교수님 추가</div>'
+      : s.profs.map((p, i) => `
+        <div class="prof-item">
+          <div>
+            <div class="prof-name" contenteditable="true" data-placeholder="이름"
+              oninput="updateProf('${s.id}', ${i}, 'name', this.textContent)">${escapeHtml(p.name)}</div>
+            <div class="prof-area" contenteditable="true" data-placeholder="연구 분야"
+              oninput="updateProf('${s.id}', ${i}, 'area', this.textContent)">${escapeHtml(p.area)}</div>
+          </div>
+          ${p.url ?
+            `<a href="${escapeHtml(p.url)}" class="prof-link" target="_blank" rel="noopener">홈 ↗</a>` :
+            `<span class="prof-link empty" onclick="const u=prompt('홈페이지 URL', ''); if(u){updateProf('${s.id}', ${i}, 'url', u); render();}">+ URL</span>`
+          }
+          <button class="prof-delete" onclick="deleteProf('${s.id}', ${i})" title="삭제">✕</button>
+        </div>
+      `).join('');
+
+    const fields = [
+      ['contactRequired', '컨택', s.contactRequired],
+      ['phdDeadline', 'PhD 마감', s.phdDeadline],
+      ['msDeadline', 'MS 마감', s.msDeadline],
+      ['msThesis', 'MS 논문', s.msThesis],
+      ['resultDate', '발표', s.resultDate],
+      ['appFee', '지원료', s.appFee],
+      ['interview', '인터뷰', s.interview]
+    ];
+
+    const reqFields = [
+      ['gre', 'GRE', s.gre],
+      ['toefl', 'TOEFL', s.toefl],
+      ['gpaCutoff', 'GPA', s.gpaCutoff],
+      ['recCount', '추천서', s.recCount],
+      ['sopPages', 'SOP', s.sopPages],
+      ['funding', 'Funding', s.funding],
+      ['highlightProject', '프로젝트', s.highlightProject]
+    ];
+
+    return `
+      <div class="school-card" data-status="${s.status}" data-id="${s.id}">
+        <div class="card-top">
+          <div class="school-name-block">
+            <div class="name" contenteditable="true" data-placeholder="학교명"
+              oninput="updateField('${s.id}', 'name', this.textContent)">${escapeHtml(s.name)}</div>
+            <div class="location" contenteditable="true" data-placeholder="도시, 주 · 학과"
+              oninput="updateField('${s.id}', 'location', this.textContent)">${escapeHtml(s.location)}</div>
+          </div>
+          <div class="rankings">
+            <div class="rank-block">
+              <div class="rank-label">US News</div>
+              <div class="rank-value" contenteditable="true"
+                oninput="updateField('${s.id}', 'usRank', this.textContent)">${escapeHtml(s.usRank)}</div>
+            </div>
+            <div class="rank-block field">
+              <div class="rank-label">분야</div>
+              <div class="rank-value" contenteditable="true"
+                oninput="updateField('${s.id}', 'fieldRank', this.textContent)">${escapeHtml(s.fieldRank)}</div>
+            </div>
+          </div>
+          <div class="status-block">
+            <select class="status-select" onchange="updateField('${s.id}', 'status', this.value); render();">
+              ${statusOpts}
+            </select>
+            <select class="fit-select" onchange="updateField('${s.id}', 'fitScore', parseInt(this.value))">
+              ${fitOpts}
+            </select>
+          </div>
+          <div class="card-actions">
+            <button class="icon-btn delete" onclick="deleteSchool('${s.id}')" title="학교 삭제">🗑</button>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div class="info-block">
+            <h4>관심 교수님 <button class="add-mini-btn" onclick="openProfModal('${s.id}')" title="교수님 추가">＋</button></h4>
+            <div class="prof-list">${profsHtml}</div>
+          </div>
+
+          <div class="info-block">
+            <h4>지원 정보</h4>
+            ${fields.map(([f, l, v]) => `
+              <div class="info-row">
+                <span class="label">${l}</span>
+                <span class="value" contenteditable="true" data-placeholder="—"
+                  oninput="updateField('${s.id}', '${f}', this.textContent)">${escapeHtml(v)}</span>
+              </div>
+            `).join('')}
+          </div>
+
+          <div class="info-block">
+            <h4>요구 사항</h4>
+            ${reqFields.map(([f, l, v]) => `
+              <div class="info-row">
+                <span class="label">${l}</span>
+                <span class="value" contenteditable="true" data-placeholder="—"
+                  oninput="updateField('${s.id}', '${f}', this.textContent)">${escapeHtml(v)}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <div class="notes-section">
+          <span class="notes-label">📝 메모</span>
+          <span contenteditable="true" data-placeholder="메모를 적으세요"
+            oninput="updateField('${s.id}', 'notes', this.textContent)">${escapeHtml(s.notes)}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function render() {
+  renderStats();
+  renderSchools();
+}
+
+// ================================================
+// EVENT LISTENERS
+// ================================================
+document.querySelectorAll('.filter-pill').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.filter;
+    renderSchools();
+  });
+});
+
+document.getElementById('search').addEventListener('input', (e) => {
+  searchQuery = e.target.value;
+  renderSchools();
+});
+
+document.getElementById('sort').addEventListener('change', (e) => {
+  currentSort = e.target.value;
+  renderSchools();
+});
+
+document.getElementById('prof-modal').addEventListener('click', (e) => {
+  if (e.target.id === 'prof-modal') closeModal();
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeModal();
+});
+
+// Initial render
+render();
+</script>
+</body>
+</html>
