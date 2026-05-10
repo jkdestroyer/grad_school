@@ -99,6 +99,8 @@
   }
 
   .btn:hover { background: var(--surface-2); border-color: var(--text-soft); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn:disabled:hover { background: var(--surface); border-color: var(--border); }
   .btn.primary { background: var(--text); color: var(--bg); border-color: var(--text); }
   .btn.primary:hover { background: var(--accent); border-color: var(--accent); }
   .btn.accent { background: var(--accent); color: white; border-color: var(--accent); }
@@ -432,6 +434,12 @@
   .prof-name { font-weight: 600; font-size: 12px; }
   .prof-area { font-size: 10px; color: var(--text-soft); margin-top: 2px; }
 
+  .prof-link-wrap {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
   .prof-link {
     color: var(--accent);
     text-decoration: none;
@@ -440,10 +448,26 @@
     border: 1px solid var(--accent);
     padding: 2px 6px;
     border-radius: 3px;
+    cursor: pointer;
+    background: none;
+    font-weight: 600;
   }
 
   .prof-link:hover { background: var(--accent); color: white; }
-  .prof-link.empty { color: var(--text-muted); border-color: var(--border); cursor: pointer; }
+  .prof-link.empty { color: var(--text-muted); border-color: var(--border); }
+  .prof-link.empty:hover { background: var(--surface); color: var(--accent); border-color: var(--accent); }
+
+  .prof-link-edit {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 10px;
+    padding: 2px 5px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .prof-link-edit:hover { background: var(--gold-soft); color: var(--gold); border-color: var(--gold); }
 
   .prof-delete {
     background: none;
@@ -568,6 +592,7 @@
   }
 
   .save-indicator.show { opacity: 1; }
+  .save-indicator.undo { background: var(--gold); }
 
   /* Help banner */
   .help-banner {
@@ -607,6 +632,7 @@
     </div>
     <div class="toolbar">
       <button class="btn accent" onclick="addSchool()">＋ 학교 추가</button>
+      <button class="btn" id="undo-btn" onclick="undo()" title="Ctrl+Z (또는 Cmd+Z)">↶ Undo</button>
       <button class="btn" onclick="exportData()">↓ JSON 백업</button>
       <button class="btn" onclick="document.getElementById('file-input').click()">↑ JSON 복원</button>
       <input type="file" id="file-input" accept=".json" onchange="importData(event)">
@@ -617,7 +643,7 @@
 
 <!-- Help banner -->
 <div class="help-banner" id="help-banner">
-  <span>💡 <strong>사용법:</strong> 모든 텍스트를 클릭해서 직접 수정하세요. 자동 저장됩니다. 정기적으로 "JSON 백업"으로 데이터를 저장해두세요.</span>
+  <span>💡 <strong>사용법:</strong> 모든 텍스트를 클릭해서 직접 수정하세요. 자동 저장됩니다. 실수했을 땐 <strong>Ctrl+Z</strong> (Mac은 Cmd+Z) 또는 Undo 버튼으로 되돌릴 수 있어요. 정기적으로 "JSON 백업"으로 데이터를 저장해두세요.</span>
   <button onclick="document.getElementById('help-banner').style.display='none'">✕</button>
 </div>
 
@@ -656,16 +682,30 @@
 <!-- Add prof modal -->
 <div class="modal-overlay" id="prof-modal">
   <div class="modal">
-    <h3>교수님 추가</h3>
+    <h3 id="prof-modal-title">교수님 추가</h3>
     <label>이름</label>
     <input type="text" id="prof-name-input" placeholder="예: Gordon Wetzstein">
     <label>연구 분야</label>
     <input type="text" id="prof-area-input" placeholder="예: Computational Imaging">
-    <label>홈페이지 URL</label>
-    <input type="text" id="prof-url-input" placeholder="https://...">
+    <label>홈페이지 URL <span style="text-transform:none; font-weight:400; color:var(--text-muted);">(선택 사항 — 나중에 추가/수정 가능)</span></label>
+    <input type="text" id="prof-url-input" placeholder="https://... (비워둬도 됩니다)">
     <div class="modal-actions">
       <button class="btn" onclick="closeModal()">취소</button>
-      <button class="btn primary" onclick="confirmAddProf()">추가</button>
+      <button class="btn primary" id="prof-modal-confirm" onclick="confirmAddProf()">추가</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit URL modal -->
+<div class="modal-overlay" id="url-modal">
+  <div class="modal">
+    <h3>홈페이지 URL 편집</h3>
+    <label>URL <span style="text-transform:none; font-weight:400; color:var(--text-muted);">(비우고 저장하면 URL이 제거됩니다)</span></label>
+    <input type="text" id="url-input" placeholder="https://...">
+    <div class="modal-actions">
+      <button class="btn" onclick="closeUrlModal()">취소</button>
+      <button class="btn danger" id="url-clear-btn" onclick="clearUrl()" style="margin-right:auto;">URL 제거</button>
+      <button class="btn primary" onclick="saveUrl()">저장</button>
     </div>
   </div>
 </div>
@@ -675,6 +715,8 @@
 // DATA MODEL
 // ================================================
 const STORAGE_KEY = 'grad_tracker_v1';
+const UNDO_STACK_LIMIT = 50;
+
 const DEFAULT_DATA = {
   schools: [
     {
@@ -711,10 +753,16 @@ const DEFAULT_DATA = {
 };
 
 let data = loadData();
+let undoStack = [];
 let currentFilter = 'all';
 let currentSort = 'added';
 let searchQuery = '';
 let pendingProfSchoolId = null;
+let pendingUrlEdit = null; // { schoolId, profIndex }
+
+// debounce for contenteditable history pushes
+let typingTimer = null;
+let lastTypingSnapshot = null;
 
 function loadData() {
   try {
@@ -734,11 +782,71 @@ function saveData() {
   }
 }
 
-function showSaveIndicator() {
+function showSaveIndicator(text, kind) {
   const el = document.getElementById('save-indicator');
+  el.textContent = text || '✓ 저장됨';
+  el.classList.toggle('undo', kind === 'undo');
   el.classList.add('show');
   clearTimeout(showSaveIndicator.t);
   showSaveIndicator.t = setTimeout(() => el.classList.remove('show'), 1500);
+}
+
+// ================================================
+// UNDO SYSTEM
+// ================================================
+// Strategy: snapshot the entire `data` object before each mutation.
+// Simple, robust, and 50 snapshots of typical data is well under storage limits.
+
+function snapshot() {
+  return JSON.parse(JSON.stringify(data));
+}
+
+function pushUndo() {
+  undoStack.push(snapshot());
+  if (undoStack.length > UNDO_STACK_LIMIT) undoStack.shift();
+  updateUndoButton();
+}
+
+function undo() {
+  if (undoStack.length === 0) return;
+  // Flush any pending typing snapshot first so the most recent typing is undone in one step
+  flushTypingSnapshot();
+  if (undoStack.length === 0) return;
+  data = undoStack.pop();
+  saveData();
+  showSaveIndicator('↶ Undo', 'undo');
+  updateUndoButton();
+  render();
+}
+
+function updateUndoButton() {
+  const btn = document.getElementById('undo-btn');
+  if (!btn) return;
+  btn.disabled = undoStack.length === 0;
+  btn.title = undoStack.length === 0
+    ? '되돌릴 작업이 없습니다'
+    : `Ctrl+Z / Cmd+Z (남은 단계: ${undoStack.length})`;
+}
+
+// For contenteditable typing: push one snapshot per "burst" of typing,
+// not every keystroke. Snapshot the state BEFORE the burst started.
+function startTypingSnapshotIfNeeded() {
+  if (lastTypingSnapshot === null) {
+    lastTypingSnapshot = snapshot();
+  }
+  clearTimeout(typingTimer);
+  typingTimer = setTimeout(flushTypingSnapshot, 800);
+}
+
+function flushTypingSnapshot() {
+  if (lastTypingSnapshot !== null) {
+    undoStack.push(lastTypingSnapshot);
+    if (undoStack.length > UNDO_STACK_LIMIT) undoStack.shift();
+    lastTypingSnapshot = null;
+    updateUndoButton();
+  }
+  clearTimeout(typingTimer);
+  typingTimer = null;
 }
 
 // ================================================
@@ -766,6 +874,8 @@ const FIT_OPTIONS = [
 // CRUD OPERATIONS
 // ================================================
 function addSchool() {
+  flushTypingSnapshot();
+  pushUndo();
   const newSchool = {
     id: 'school-' + Date.now(),
     name: '새 학교',
@@ -798,7 +908,9 @@ function addSchool() {
 }
 
 function deleteSchool(id) {
-  if (!confirm('이 학교를 삭제하시겠습니까?')) return;
+  if (!confirm('이 학교를 삭제하시겠습니까? (Undo로 되돌릴 수 있습니다)')) return;
+  flushTypingSnapshot();
+  pushUndo();
   data.schools = data.schools.filter(s => s.id !== id);
   saveData();
   render();
@@ -807,11 +919,24 @@ function deleteSchool(id) {
 function updateField(schoolId, field, value) {
   const school = data.schools.find(s => s.id === schoolId);
   if (!school) return;
+  // Group consecutive typing edits into one undo step
+  startTypingSnapshotIfNeeded();
   school[field] = value;
   saveData();
   if (field === 'status' || field === 'fitScore' || field === 'usRank' || field === 'fieldRank' || field === 'phdDeadline' || field === 'name') {
     renderStats();
   }
+}
+
+// status/fit dropdowns are discrete - push immediately
+function updateFieldDiscrete(schoolId, field, value) {
+  flushTypingSnapshot();
+  pushUndo();
+  const school = data.schools.find(s => s.id === schoolId);
+  if (!school) return;
+  school[field] = value;
+  saveData();
+  render();
 }
 
 function openProfModal(schoolId) {
@@ -835,6 +960,8 @@ function confirmAddProf() {
   const url = document.getElementById('prof-url-input').value.trim();
   const school = data.schools.find(s => s.id === pendingProfSchoolId);
   if (!school) return;
+  flushTypingSnapshot();
+  pushUndo();
   school.profs.push({ name, area, url });
   saveData();
   render();
@@ -842,8 +969,11 @@ function confirmAddProf() {
 }
 
 function deleteProf(schoolId, profIndex) {
+  if (!confirm('이 교수님을 삭제하시겠습니까? (Undo로 되돌릴 수 있습니다)')) return;
   const school = data.schools.find(s => s.id === schoolId);
   if (!school) return;
+  flushTypingSnapshot();
+  pushUndo();
   school.profs.splice(profIndex, 1);
   saveData();
   render();
@@ -852,8 +982,57 @@ function deleteProf(schoolId, profIndex) {
 function updateProf(schoolId, profIndex, field, value) {
   const school = data.schools.find(s => s.id === schoolId);
   if (!school || !school.profs[profIndex]) return;
+  startTypingSnapshotIfNeeded();
   school.profs[profIndex][field] = value;
   saveData();
+}
+
+// ================================================
+// URL EDIT MODAL (works for both empty & filled URLs)
+// ================================================
+function openUrlEditor(schoolId, profIndex) {
+  const school = data.schools.find(s => s.id === schoolId);
+  if (!school || !school.profs[profIndex]) return;
+  pendingUrlEdit = { schoolId, profIndex };
+  const currentUrl = school.profs[profIndex].url || '';
+  const input = document.getElementById('url-input');
+  input.value = currentUrl;
+  // Show "URL 제거" button only if there's a URL to remove
+  document.getElementById('url-clear-btn').style.display = currentUrl ? 'inline-flex' : 'none';
+  document.getElementById('url-modal').classList.add('show');
+  setTimeout(() => { input.focus(); input.select(); }, 50);
+}
+
+function closeUrlModal() {
+  document.getElementById('url-modal').classList.remove('show');
+  pendingUrlEdit = null;
+}
+
+function saveUrl() {
+  if (!pendingUrlEdit) return;
+  const newUrl = document.getElementById('url-input').value.trim();
+  const { schoolId, profIndex } = pendingUrlEdit;
+  const school = data.schools.find(s => s.id === schoolId);
+  if (!school || !school.profs[profIndex]) { closeUrlModal(); return; }
+  flushTypingSnapshot();
+  pushUndo();
+  school.profs[profIndex].url = newUrl;
+  saveData();
+  render();
+  closeUrlModal();
+}
+
+function clearUrl() {
+  if (!pendingUrlEdit) return;
+  const { schoolId, profIndex } = pendingUrlEdit;
+  const school = data.schools.find(s => s.id === schoolId);
+  if (!school || !school.profs[profIndex]) { closeUrlModal(); return; }
+  flushTypingSnapshot();
+  pushUndo();
+  school.profs[profIndex].url = '';
+  saveData();
+  render();
+  closeUrlModal();
 }
 
 // ================================================
@@ -880,7 +1059,9 @@ function importData(event) {
       if (!imported.schools || !Array.isArray(imported.schools)) {
         throw new Error('잘못된 형식');
       }
-      if (confirm('현재 데이터를 가져온 데이터로 덮어쓰시겠습니까?')) {
+      if (confirm('현재 데이터를 가져온 데이터로 덮어쓰시겠습니까? (Undo로 되돌릴 수 있습니다)')) {
+        flushTypingSnapshot();
+        pushUndo();
         data = imported;
         saveData();
         render();
@@ -894,8 +1075,10 @@ function importData(event) {
 }
 
 function resetAll() {
-  if (!confirm('모든 데이터를 삭제하고 처음 상태로 되돌리시겠습니까? 이 작업은 되돌릴 수 없습니다.')) return;
+  if (!confirm('모든 데이터를 삭제하고 처음 상태로 되돌리시겠습니까? (Undo로 되돌릴 수 있습니다)')) return;
   if (!confirm('정말로 삭제하시겠습니까?')) return;
+  flushTypingSnapshot();
+  pushUndo();
   data = JSON.parse(JSON.stringify(DEFAULT_DATA));
   saveData();
   render();
@@ -1010,21 +1193,29 @@ function renderSchools() {
 
     const profsHtml = s.profs.length === 0
       ? '<div style="font-size: 11px; color: var(--text-muted); font-style: italic; padding: 8px;">+ 버튼을 눌러 교수님 추가</div>'
-      : s.profs.map((p, i) => `
-        <div class="prof-item">
-          <div>
-            <div class="prof-name" contenteditable="true" data-placeholder="이름"
-              oninput="updateProf('${s.id}', ${i}, 'name', this.textContent)">${escapeHtml(p.name)}</div>
-            <div class="prof-area" contenteditable="true" data-placeholder="연구 분야"
-              oninput="updateProf('${s.id}', ${i}, 'area', this.textContent)">${escapeHtml(p.area)}</div>
-          </div>
-          ${p.url ?
-            `<a href="${escapeHtml(p.url)}" class="prof-link" target="_blank" rel="noopener">홈 ↗</a>` :
-            `<span class="prof-link empty" onclick="const u=prompt('홈페이지 URL', ''); if(u){updateProf('${s.id}', ${i}, 'url', u); render();}">+ URL</span>`
-          }
-          <button class="prof-delete" onclick="deleteProf('${s.id}', ${i})" title="삭제">✕</button>
-        </div>
-      `).join('');
+      : s.profs.map((p, i) => {
+          // URL block: if URL exists, show clickable link + small edit button.
+          // If no URL, show a "+ URL" button that opens the same edit modal.
+          const urlHtml = p.url
+            ? `<div class="prof-link-wrap">
+                 <a href="${escapeHtml(p.url)}" class="prof-link" target="_blank" rel="noopener" title="${escapeHtml(p.url)}">홈 ↗</a>
+                 <button class="prof-link-edit" onclick="openUrlEditor('${s.id}', ${i})" title="URL 편집">✎</button>
+               </div>`
+            : `<button class="prof-link empty" onclick="openUrlEditor('${s.id}', ${i})">+ URL</button>`;
+
+          return `
+            <div class="prof-item">
+              <div>
+                <div class="prof-name" contenteditable="true" data-placeholder="이름"
+                  oninput="updateProf('${s.id}', ${i}, 'name', this.textContent)">${escapeHtml(p.name)}</div>
+                <div class="prof-area" contenteditable="true" data-placeholder="연구 분야"
+                  oninput="updateProf('${s.id}', ${i}, 'area', this.textContent)">${escapeHtml(p.area)}</div>
+              </div>
+              ${urlHtml}
+              <button class="prof-delete" onclick="deleteProf('${s.id}', ${i})" title="삭제">✕</button>
+            </div>
+          `;
+        }).join('');
 
     const fields = [
       ['contactRequired', '컨택', s.contactRequired],
@@ -1068,10 +1259,10 @@ function renderSchools() {
             </div>
           </div>
           <div class="status-block">
-            <select class="status-select" onchange="updateField('${s.id}', 'status', this.value); render();">
+            <select class="status-select" onchange="updateFieldDiscrete('${s.id}', 'status', this.value)">
               ${statusOpts}
             </select>
-            <select class="fit-select" onchange="updateField('${s.id}', 'fitScore', parseInt(this.value))">
+            <select class="fit-select" onchange="updateFieldDiscrete('${s.id}', 'fitScore', parseInt(this.value))">
               ${fitOpts}
             </select>
           </div>
@@ -1122,6 +1313,7 @@ function renderSchools() {
 function render() {
   renderStats();
   renderSchools();
+  updateUndoButton();
 }
 
 // ================================================
@@ -1150,9 +1342,50 @@ document.getElementById('prof-modal').addEventListener('click', (e) => {
   if (e.target.id === 'prof-modal') closeModal();
 });
 
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') closeModal();
+document.getElementById('url-modal').addEventListener('click', (e) => {
+  if (e.target.id === 'url-modal') closeUrlModal();
 });
+
+// Enter key in URL input saves
+document.getElementById('url-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); saveUrl(); }
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeModal();
+    closeUrlModal();
+    return;
+  }
+  // Ctrl+Z (Win/Linux) or Cmd+Z (Mac) for undo
+  // Avoid hijacking the browser's native undo inside text editing — only intercept
+  // when focus is NOT on an input/textarea/contenteditable.
+  if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === 'z' || e.key === 'Z')) {
+    const t = e.target;
+    const inEditable = t && (
+      t.tagName === 'INPUT' ||
+      t.tagName === 'TEXTAREA' ||
+      t.isContentEditable
+    );
+    if (!inEditable) {
+      e.preventDefault();
+      undo();
+    }
+    // If focus is in an editable area, let the browser do its native text undo.
+    // The user can blur (click outside) and then Ctrl+Z to undo whole-app changes.
+  }
+});
+
+// Flush pending typing snapshot when user clicks away or window loses focus
+document.addEventListener('focusout', (e) => {
+  if (e.target && (e.target.isContentEditable || e.target.tagName === 'INPUT')) {
+    // small delay so consecutive focus changes between fields still group
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(flushTypingSnapshot, 200);
+  }
+});
+window.addEventListener('beforeunload', flushTypingSnapshot);
 
 // Initial render
 render();
